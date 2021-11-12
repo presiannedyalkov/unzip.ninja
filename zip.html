@@ -1,0 +1,247 @@
+<!--
+TO DO:
+[] Add themes with https://github.com/markdowncss
+[] Add preact
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Create a compressed site/message." />
+  <meta name="author" content="Pres" />
+  <title>Zip</title>
+  <script>
+    // Markdown with Snarkdown https://github.com/developit/snarkdown
+    !function (e, n) { "object" == typeof exports && "undefined" != typeof module ? module.exports = n() : "function" == typeof define && define.amd ? define(n) : e.snarkdown = n() }(this, function () { function e(e) { return e.replace(RegExp("^" + (e.match(/^(\t| )+/) || "")[0], "gm"), "") } function n(e) { return e.replace(/"/g, "&quot;") } function r(o) { function c(e) { var n = e.replace(/\*/g, "_").replace(/^( {2}\n\n*|\n{2,})/g, "\n\n"), r = f[f.length - 1] === e, o = t[n]; return o ? o[1] ? (f[r ? "pop" : "push"](e), o[r ? 1 : 0]) : o[0] : e } function a() { for (var e = "", n = f.length; n--;)e += c(f[n]); return e } var l, u, s, p, g, i = /(?:^```(\w*)\n([\s\S]*?)\n```$)|((?:(?:^|\n+)(?:\t|  {2,}).+)+\n*)|((?:(?:^|\n)([>*+-]|\d+\.)\s+.*)+)|(?:\!\[([^\]]*?)\]\(([^\)]+?)\))|(\[)|(\](?:\(([^\)]+?)\))?)|(?:(?:^|\n+)([^\s].*)\n(\-{3,}|={3,})(?:\n+|$))|(?:(?:^|\n+)(#{1,3})\s*(.+)(?:\n+|$))|(?:`([^`].*?)`)|(  \n\n*|\n{2,}|__|\*\*|[_*])/gm, f = [], d = "", m = 0, h = {}; for (o = o.replace(/^\n+|\n+$/g, "").replace(/^\[(.+?)\]:\s*(.+)$/gm, function (e, n, r) { return h[n.toLowerCase()] = r, "" }); s = i.exec(o);)u = o.substring(m, s.index), m = i.lastIndex, l = s[0], u.match(/[^\\](\\\\)*\\$/) || (s[2] || s[3] ? l = '<pre class="code ' + (s[3] ? "poetry" : s[1].toLowerCase()) + '">' + e((s[2] || s[3]).replace(/^\n+|\n+$/g, "")) + "</pre>" : s[5] ? (g = s[5], "." === g.charAt(g.length - 1) && (g = ".", s[4] = s[4].replace(/^\d+/gm, "")), p = r(e(s[4].replace(/^\s*[>*+.-]/gm, ""))), ">" !== g && (g = "." === g ? "#" : "*", p = p.replace(/^(.*)(\n|$)/gm, "<li>$1</li>")), l = t[g][0] + p + t[g][1]) : s[7] ? l = '<img src="' + n(s[7]) + '" alt="' + n(s[6]) + '">' : s[9] ? (d = d.replace("<a>", '<a href="' + n(s[10] || h[u.toLowerCase()]) + '">'), l = a() + "</a>") : s[8] ? l = "<a>" : s[11] || s[13] ? (g = "h" + (s[13] ? s[13].length : "=" === s[12][0] ? 1 : 2), l = "<" + g + ">" + r(s[11] || s[14]) + "</" + g + ">") : s[15] ? l = "<code>" + s[15] + "</code>" : s[16] && (l = c(s[16]))), d += u, d += l; return (d + o.substring(m) + a()).trim() } var t = { _: ["<em>", "</em>"], __: ["<strong>", "</strong>"], "\n\n": ["<br />"], ">": ["<blockquote>", "</blockquote>"], "*": ["<ul>", "</ul>"], "#": ["<ol>", "</ol>"] }; return r });
+  </script>
+  <style>
+    html {
+      width: 100%;
+    }
+
+    body {
+      margin: 5% auto 0 auto;
+      width: 100%;
+      max-width: 1125px;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      background-color: #e0e5ec;
+    }
+
+    input {
+      margin-bottom: 20px;
+      padding: 10px;
+      font-weight: 800;
+      font-size: .8em;
+      border: 2px solid black;
+    }
+
+    textarea {
+      border: 20px solid black;
+      padding: 20px;
+      position: relative;
+    }
+
+    #link {
+      color: black;
+      text-align: center;
+    }
+
+    #bytes {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+
+    #bytes::after {
+      content: ' bytes';
+    }
+
+    button {
+      background: transparent;
+      border: 2px solid #111;
+      padding: 15px 50px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 800;
+      font-size: .8em;
+    }
+
+    button:hover {
+      color: #000;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+      margin-left: auto; 
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    input:checked+.slider {
+      background-color: #2196F3;
+    }
+
+    input:focus+.slider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+
+    input:checked+.slider:before {
+      -webkit-transform: translateX(26px);
+      -ms-transform: translateX(26px);
+      transform: translateX(26px);
+    }
+  </style>
+</head>
+
+<body>
+  <input placeholder="Title"></input>
+  <label class="switch">
+    <input id="toggle" type="checkbox">
+    <span class="slider"></span>
+  </label>
+  <textarea rows="20" cols="100" placeholder="Type HTML here!" name="html"></textarea>
+  <p id="bytes">0</p>
+  <p id="link"></p>
+  <!-- 
+    <p><a href="/unzip.html#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">About</a></p>
+  -->
+
+  <script>
+    (function main() {
+      if ("CompressionStream" in window) {
+        const title = document.querySelector('input');
+        const input = document.querySelector('textarea');
+        const link = document.getElementById('link');
+        const toggle = document.getElementById('toggle');
+        const bytes_display = document.getElementById('bytes');
+        const divider = '/';
+
+        function compressToBuffer(string, format) {
+          const byteArray = new TextEncoder().encode(string);
+          const cs = new CompressionStream(format);
+          const writer = cs.writable.getWriter();
+          writer.write(byteArray);
+          writer.close();
+          return new Response(cs.readable).arrayBuffer();
+        }
+        async function compress(text, format) {
+          return await compressToBuffer(text, format);
+        }
+
+        function _arrayBufferToBase64(buffer) {
+          let binary = '';
+          const bytes = new Uint8Array(buffer);
+          const len = bytes.byteLength;
+          for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return window.btoa(binary);
+        }
+
+        function byteSize(str) {
+          return new Blob([str]).size;
+        };
+
+        function button(host, title, text) {
+          return `<a href="${host}#${title}${divider}${text}" target="_blank"><button>Visit your tiny website</button></a>`;
+        }
+
+        function wrapHTML(html, currentTitle) {
+          currentTitle = decodeURIComponent(currentTitle).replaceAll('_', ' ');
+          //const css = '<style>html{max-width:70ch;padding:3em 1em;margin:auto;line-height:1.75;font-size:1.25em;}br{content:\'A\';display:block;margin-bottom:0.5em;}code{padding:0 3px;border:1px solid #CCC;border-radius:2px;background:#FFF;}pre.code{padding:2px 5px;border:1px solid #DDD;background:#FFF;border-left-width:3px;}</style>';
+          const css = `<style>@media print{*,:after,:before{background:0 0!important;color:#000!important;box-shadow:none!important;text-shadow:none!important}a,a:visited{text-decoration:underline}a[href]:after{content:" (" attr(href) ")"}abbr[title]:after{content:" (" attr(title) ")"}a[href^="#"]:after,a[href^="javascript:"]:after{content:""}blockquote,pre{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}img,tr{page-break-inside:avoid}img{max-width:100%!important}h2,h3,p{orphans:3;widows:3}h2,h3{page-break-after:avoid}}html{font-size:12px}@media screen and (min-width:32rem) and (max-width:48rem){html{font-size:15px}}@media screen and (min-width:48rem){html{font-size:16px}}body{line-height:1.85}.air-p,p{font-size:1rem;margin-bottom:1.3rem}.air-h1,.air-h2,.air-h3,.air-h4,h1,h2,h3,h4{margin:1.414rem 0 .5rem;font-weight:inherit;line-height:1.42}.air-h1,h1{margin-top:0;font-size:3.998rem}.air-h2,h2{font-size:2.827rem}.air-h3,h3{font-size:1.999rem}.air-h4,h4{font-size:1.414rem}.air-h5,h5{font-size:1.121rem}.air-h6,h6{font-size:.88rem}.air-small,small{font-size:.707em}canvas,iframe,img,select,svg,textarea,video{max-width:100%}body{color:#444;font-family:'Open Sans',Helvetica,sans-serif;font-weight:300;margin:6rem auto 1rem;max-width:48rem;text-align:center}img{border-radius:50%;height:200px;margin:0 auto;width:200px}a,a:visited{color:#3498db}a:active,a:focus,a:hover{color:#2980b9}pre{background-color:#fafafa;padding:1rem;text-align:left}blockquote{margin:0;border-left:5px solid #7a7a7a;font-style:italic;padding:1.33em;text-align:left}li,ol,ul{text-align:left}p{color:#777}</style>`;
+          return `<!DOCTYPE html><html lang="en"><head>${css}<title>${currentTitle}</title></head><body>${html}</body\></html>`;
+        }
+
+        function updateUrl(e) {
+          const currentHash = window.location.hash.substr(1);
+          const href = window.location.href;
+          const hashIndex = href.indexOf('#');
+          const host = hashIndex > 0 ? href.substr(0, hashIndex) : href;
+          const index = currentHash.indexOf(divider);
+          const currentTitle = currentHash.substr(0, index);
+          const currentGzipText = currentHash.substr(index + 1);
+
+          if (e.target.localName == 'textarea') {
+            let decompressed_text = e.target.value;
+            if (input.name == 'markdown') {
+              let html = snarkdown(decompressed_text);
+              html = wrapHTML(html, currentTitle);
+              decompressed_text = html;
+            }
+
+            (async function () {
+              const compressedData = await compress(decompressed_text, 'gzip');
+              const newGzipText = _arrayBufferToBase64(compressedData);
+              window.location.hash = currentTitle + divider + newGzipText;
+              link.innerHTML = button(host, currentTitle, newGzipText);
+              bytes_display.innerHTML = byteSize(currentTitle.concat(newGzipText));
+            }());
+          } else if (e.target.localName == 'input') {
+            const newTitle = encodeURIComponent(e.target.value.replaceAll(' ', '_'));
+            window.location.hash = newTitle + divider + currentGzipText;
+            link.innerHTML = button(host, newTitle, currentGzipText);
+            bytes_display.innerHTML = byteSize(newTitle.concat(currentGzipText));
+          }
+        }
+
+        function updateTextarea(e) {
+          if (e.target.checked) {
+            input.placeholder = 'Type Markdown here!';
+            input.name = 'markdown';
+          } else {
+            input.placeholder = 'Type HTML here!';
+            input.name = 'html';
+          }
+        }
+
+        input.addEventListener('input', updateUrl);
+        title.addEventListener('input', updateUrl);
+        toggle.addEventListener('click', updateTextarea);
+      } else {
+        console.error("Your browser doesn't support the Compression API");
+      }
+    }());
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Decompress and render zipped html from URL fragment." />
+  <meta name="author" content="Pres" />
+  <title>Unzip</title>
+</head>
+
+<body onload="main()">
+  <script>
+    function main() {
+      const setInnerHTML = function (elm, html) { // https://stackoverflow.com/a/47614491/7524697
+        elm.innerHTML = html;
+        Array.from(elm.querySelectorAll("script")).forEach(
+          (oldScript) => {
+            const newScript = document.createElement("script");
+            Array.from(oldScript.attributes).forEach((attr) =>
+              newScript.setAttribute(attr.name, attr.value)
+            );
+            newScript.appendChild(
+              document.createTextNode(oldScript.innerHTML)
+            );
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+          }
+        );
+      };
+
+      // check if this is html or plain text in which case add html wrapper arround it
+      const wrapHTML = function (html, title) {
+        const regex = new RegExp('<html|<body', 'igm');
+        const hasHTMLwrapper = regex.test(html);
+        title = decodeURIComponent(title).replaceAll('_', ' ');
+        if (!hasHTMLwrapper) {
+          const css = '<style>html{max-width:70ch;padding:3em 1em;margin:auto;line-height:1.75;font-size:1.25em;}</style>';
+          return `<!DOCTYPE html><html lang="en"><head>${css}<title>${title}</title></head><body>${html}</body\></html>`;
+        }
+        return html;
+      }
+
+      const hash = window.location.hash.substr(1);
+
+      if (hash.length > 0) {
+        const divider = '/';
+        const index = hash.indexOf(divider);
+        const title = hash.substr(0, index);
+        const gzipHTML = hash.substr(index + 1);
+
+        if ("CompressionStream" in window) { // https://stackoverflow.com/a/64056694/7524697
+          (async () => {
+            const compressed_blob = await fetch(
+              "data:application/octet-stream;base64," + gzipHTML
+            ).then((r) => r.blob());
+
+            const decompressor = new DecompressionStream("gzip");
+            const decompression_stream = compressed_blob
+              .stream()
+              .pipeThrough(decompressor);
+            const decompressed_blob = await new Response(
+              decompression_stream
+            ).blob();
+
+            let html = await decompressed_blob.text();
+            html = wrapHTML(html, title);
+            setInnerHTML(document.documentElement, html);
+          })().catch(console.error);
+        } else {
+          console.error("Your browser doesn't support the Compression API");
+          (async () => {
+            const worker_script = `  
+              importScripts("https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako_inflate.min.js");
+              self.onmessage = async (evt) => {
+                const file = evt.data;
+                const buf = await file.arrayBuffer();
+                const decompressed = pako.inflate(buf);
+                // zero copy
+                self.postMessage(decompressed, [decompressed.buffer]);
+              };
+            `;
+            const worker_blob = new Blob([worker_script], { type: "application/javascript" });
+            const worker_url = URL.createObjectURL(worker_blob);
+            const worker = new Worker(worker_url);
+
+            const compressed_blob = await fetch(
+              "data:application/octet-stream;base64," + gzipHTML
+            ).then((r) => r.blob());
+
+            worker.onmessage = ({ data }) => {
+              let html = new TextDecoder().decode(data);
+              html = wrapHTML(html, title);
+              setInnerHTML(document.documentElement, html);
+            };
+            worker.postMessage(compressed_blob);
+
+          })().catch(console.error);
+        }
+      } else { // someone comes without a hash on the page -> redirect to overview page
+        window.location.hash = 'Zip/H4sIAAAAAAAACqUaaXfbNvJ7fgVCuxVpUdRpx9bhbJqm27yXbvuaZLddSbEhEpJQUyRLUj4q87/vDACSICUn2d3m1QSBuTAzGMwMNX7+/c+vP/z+yxuyTjf+5bMxPohPg9XEYIFx+QxmGPUunxEy3rCUEndN44SlE+Pjhx9a5wZpl0vrNI1a7M8tv50Yv7U+vmq9DjcRTfnCZwZxwyBlAeC9fTNh3opVMAO6YRPjlrO7KIxTDfiOe+l64rFb7rKWeLEJD3jKqd9KXOqzSdfpHCDlscSNeZTyMNCovY4ZTRmBTYBgMUsS5pGEp6y9gTFdMecAJbpN12GsEfkFEHO4lKc+u/w3j8ZtOcRJyRmHhLTb5Cca33jhXUDueLom74P8FbWVDNvtFUxvFw6I1IZ9Mj+MeNpOcjBB5flyG7i4F2IymwQW2REjXPzBXFDVZELSh4iFS8LuUXkJ+fZbYmwDjy15wDyDPC8ANqG39Rl5qQZOjjAhgWmRITFyNjpVSQeJypFDNx6QkC9mgHjMKcRVtDIzXfPEJqXcKHPxxkyG7zFLtzG8OTGLfOoy81e2enMfmcYngzRhq86Gpu7abH8yZ+kjsZptizw+EsOwpp25TYzVxrBsfCVZSTp4gnTbaK8A+Ns/t2E6qqLEZliRzpUkbmlMcD8ajdmJIHJlWOXcJ5PsetksmAUnj7Ng17MzSwDhDMoXA4nldOn4LFiB/VukOwftAlmbhLCUToP5KBc3BMWGUwB4SczlNIaHEYWRgaaJtsnamINkgCZWujDbmaP6Q1AHWkHfE5UKD2Ni4j4YcDIMW+wnF2VEglZrZDHSnMCWlyCHVQiCtBDPt8nWJmDIyCawKQ7obfPl8NP19bU5uzuxZoE5nSWz9/OTlzCG2WPr0QQAhAFtNC0YoO2I0IvTtJqgpgqIZU4vT5qt+ePMa84ca5Y0nROrCSCA+Hw2NaefZnNBfT4z8cWaN+HFAoDZFP/MEbCy8lIglxLAUjJ3hKyz1q5vZ48T/CtEC5qPx1YN/mjXtfsZSHJiOs0a1DVQuwZiL61reCdEN/vj1dXj7GR28ji9OpmDD2zA/UFfU3BVT6l/A8+OTdbw2GUjaR50glBzJ+QG/x8LJ6o4GmjDwS3Oh0q2Y8mkEhvA4TT/X08DJw3fhXcsfk0TZlrgeyRGwiQDa+PR5xAGmAtHYGRthSjJdpGkMQ9WJhBPHA6R5N6SsnPHp0n6Fmds4sNEIk7iNj+ooGowyAz+s05ms2N5Xs1k2pvjIJn20bMRrzGG8EtcoJZMDDf0GGngiVcQ4PQsjR/Q7xM4DdUdWADYMC4RnpkV2tbTWkQkY9wGppeS6qk4YyuxhVMMJo4hTuXKwfvtVWqutANrYfQTwAAGOpkO5gJxMNc5ek1hDuQG5wX1bDKzDpScoLs7rXkBiyHsEqM0MNf5SHFQG0ciAJwYkmqkhx5wa3MWgHdKcmOfXx53x214CCl8EWBWcwwQTcBuyreuCBvJ9EVpDr5ZkSR2JwbqNTBxTSqaUD8tZ8/mhfqRwIXQInq3V0hljOkliNoYQz4Qs2WJ2+0IS62n25pL5iSVwBi6hLWAjpTzPJdT0JZe0VVm7/YLSxprQzqRnBPP3IqgwIlUKUz3hEJkCO0prsYYkVfI+RJHsakzGcyVTBqQlK17WgqHjiyQ5bRAUHMC9GwuDIzArinehfk9jMBb9fSLGAx6bVaPI8oA2rEceN/gLStidIrRhFwNydQYsw3qHtjiANz6Sk4DgTBYqaX8ZZ5fUgJkEUNKI+Yu1YQfujd4WzKFp08g3ImE2/pqHQc4fyTnw3weB3OSFfuKMfRgntQuEyWQ8EFmT0TkoWQnhoSIlG9Iup3ONyMxlT0Tj0XoPRRAGxqveDAkp98QyNZC0hGP0VMkEOG+lU93e6fRfb7g8QS8+GFIlj4rJv/YJilfPrRUBjgkLvxlcb6MoC2Px0xEYVgN/e0myFcX1L1ZxSHkY4Dvh/GQHLEOO2VuZTs8iLZpbT+tRZim4QZctFMKGFHPA1/A7ZSTSxCsdcf4ag3CnXc6lfmE/8WGxDlnm0KkMPYYCNKL7kkS+twjCzi5NxWBUnafUsiWC5kKpM4hLE2wirQhZNdCKTHzoRC4ZRUmRz4PbgoOSj0VqihGi/p8FVS1nhNYPKQsqestDaOqfmr61Jd0BjEq8AD94ZAugbMmqPKDBhHrjapnboFLUOqtsP+QpDENkgjUGqRP2+Ko2+3uWxt8lJxqcrvbOEFtRSHXfVFsR7CB3AK2uo0iFrsQZnMAn6UA3gIpXEG4/z96UWWzw3V4W9GP9PNOTkMBOwlUQO66gHvKO7RjyANwEdYSoad2ns80bayV1P3BntF9toQFEQ9IdSWWOJ0nvKT045r41bMaoibTB42Okq9TF66uDDC2prRSGXQBjrBN2ZdMjV7eKe261PdS31u+qXJiPyy5rpuvghssbrjyJCWWM0gK1oemq/saLhh4IPua7eWnyTDqGuudleZUWtWn5J41k+e71Kf29nm35iXz/2Ojwg2G7pq5N8xr1s15QL+97sXZD/0DNJahu032KYT3rWRNoagGs8G/LkSAp2nU5Kirv7JPGRrEEI4d+81EpVqFSjbJ14B9ESSTV7y818dt2UR6NsaLW9z48hiJnHEd+iDzxPiALRTjctwWawLKpwvm54WCPICGTBMUAe5NjDRcrbDFhB0LKCdQFaC9HA5iXVBQENpBFjgrOLQFC9nNyS+9OLwD4F4Huz4+jCB3MGqiAivy44ef3oGzxuy5oZpFmLsg9ZySIBsJIcVVYVx2oArRZvEGRASYq7eOzKKw21COTZXcmHxJTOO16mDB+vsUOG0M8AQ4JQE4TAkqjleSEtGcwjQdXG0Dp835c8vih/fMh6QljM2G0GWjMG6OJlX8NFq+zX1McbNriCuWvvEZDr97eOuZDVzfx5KG/ByehNjHFNq9UvfG5wjIG3sP3+O34vRBLdSG+7xYLZtCSt8fwu+2yyWD8kAk5TYW8VD96irXZXoVx0KegN2RD6CtNwEWBLFpOUyMFBlNnhzbTRTanqVNxXIf5y7mqdiEmzg4pgufoQb+JebNCoaEFWDMLEQ9BOL6IdZp+opK5VG8X1kSAXNmAk+QzkOelkORmNKUhpkVI5o8BO6+ek10qcNKVTzpHeXpvjkqeDrDfVNeacIBPmRHZwNzIV6rHCFZIgse0Bgt2Gjs61umn9JMH+F2Phc6zGntw0MxCtACy8G/72QjToMTLSHki622zggeY8SCQbNZFY7kokHR+F44kbOMw83rNY1fo2MJLlM+r4iR7etThgxnkYbUlBS/oD4k/B7SQXTdgxZCbXznhwtzChBzy8HcUSN56HTJPNJchwkYUQQrW+SyB+lfF62F4x1iZEfHO4GTHe/UOYYRomdwJ0BWh18rrqCuEKFWsrr8J4eLnTyEWyigefBA4ILELwFQ5sp1bD9cf14RdzGN8AowMerbmKdhZi8usVo40FYwNjE8+R9/fYsnOwxgxazg5q2UV75vNq4aNtQZjYMBAl3vWpXOf9swj1MSgSOkuxNbliy2ygN2WhUCucRzvsHGP4UyRCYnmKprk1rqEYB82oqoLw4uZdSmw1tUKvOE7lu4zZiK5Am/RsSYyWd0ipabS/F2ee5nwIVGaJrGJq5axLCMjC4W8VSY9WnoVOpagAvCnybGkaHg7WLqD3pL5c06NPaIGVnZ2LAj1JUsybplRXZxcTGK6ArqEAhwNy0OOaHHhvQ25F6WYmKzywsWEXFbOAVFFio8yvhmZafx7il8WN6V7QhsUmg6Xffsdd+OdmEcrSHHGvZHAAa5ybAvl3SqYluKaIYeuSsLty6Ul5nyEFAEgzBEA4+YG6h3JON+L2YbS80W4gzOcXZXpwbFaPZ5ck8gniEiZoA7UdapPL/rnJ9mDuVxK4K9auBAY1StyrpOHyYl8Lpry2dPPfvqObBhSapuPdip5lDXGXQHgAuZtHOKhPVylweQxfF0VJVq0CsYrbs7rbnQGZVC9p2Li/NSJuDa07bQc857L8rVPtpM2yDgXpSrAxRXX5USq9VTe31aWe32uuXqmb0+01ad81KmZEN93xZ/dYgXnRcA4dIAzobNlzHkrzb6aiKyOzu5BbdV6Z2NMTWsuam0o4ofg8FA6mRJN9x/GDZ+jsAp3oPPNuwfmX/LUu5SO4H3VgKaXla03+90lJmHZ2gh0cNTxq944kjr1shukDg+8sC2YurxbTI87XwzUibsdbCGV6RVU1CSEyuVkKU20h9cnHuLjA6piw0JABDVGTxFjyMH612cdxYXWVQJrarSO1pS/DfKmzfdmuRYtmoxJ3fQzkjtQ5S1p2X0eUHxn3I5jPVDSOx87pYMnH7/AAuf26Fvb/1dfSHKd/HixYssL9GuD6R31+PqjwPqvw2Qvww43sFNlKlP4fCiXWVZ/llc1X+y+jsWcQHW8G2Ga0j8C5ftNvKgwvwY+2b9cpWXoeT6I03w45rKaUDH4v5x1jCtGulm98BVivfEITSYPgAMxMQnMMBACPmF7Oel2Tg6dE1jhoKQBdYlhKCXElOJhJ8E82X8qnCYL1c8ta0WrFXacyhLqOYeOnLJXX7jexL573/xCIuXw/hSriZBxWoUsEpljky/hEr9f0CIwR8WaGVjLaPFxBfThvzHGVep5FrQuaX+lo0qOMhH1KlOkNPfqB8j7NGXHIQXT0jxmwVzj6U1qqEplM9lfHWUQ/tAtCpc9qzyatbKInN/B8oyBe3vaUrxq1mlLNrfEmSRKzBjY09OSQ9yds3KByukKss9OofOXOkw0v+aRZ3d1DnWSWFzAFw7YLHosEyq5YFO0dbJ7IlUaQpUCeY1jE7MAVWA8KZOskYzM6szGWF+wj7n66qzUjNjofT8XMpuQKUmqDp9pSggWBRcNerSPWGCgo2u/trRrhL6vAFyenadSE2cr1B/TipXfZ3gE8Xr0xfEBxVa6rdExUKqWVo3iowiWpsPq37R6Ct+wiWafY3RATQZfLTYc8BNvpZd2Vf8LCuMJo0vKkjiQKrw5hY0+44nUPawouVnlxerpmtxaf+3OKIzdwDJhVzlpkDKDVRg7ukGz0aIv06L4zA2jd+xRF9gRxY05IUsCRopSbYR1kgEqi+9P0Ze/fLWKCnLPrQ6suXnZpl4YDNaZh7/AYUlawUDKQAA';
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
