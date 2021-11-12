@@ -3,7 +3,7 @@ This small gzip decompressor unzips the string ('#Zip/H4sIAAAAAAAA...') and rend
 
 Inspired by [itty.bitty.site](https://itty.bitty.site)
 
-This tool is hosted on the [IPFS](https://ipfs.io/ipfs/QmXwkqP9kLPRNu9U2W2E4imoztAJryijXPQQnjQ9EYCXnz?filename=unzip.html).
+This tool is hosted on the [IPFS](https://ipfs.io/ipfs/QmXwkqP9kLPRNu9U2W2E4imoztAJryijXPQQnjQ9EYCXnz?filename=unzip.html) with the domain [unzip.ninja](http://www.unzip.ninja) pointing to the file.
 
 You can create small sites, resumes, animations, games, comic strips, and share them without the need to host them anywhere on the internet.
 
